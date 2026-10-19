@@ -54,15 +54,10 @@ jobs:
             exit 1
           fi
 
-      # A repo secret wins; with none, npm falls back to OIDC trusted publishing.
+      # Trusted publishing only: npm exchanges the GitHub OIDC token for a
+      # short-lived publish credential. No long-lived npm token is stored.
       - name: Publish to npm
-        run: |
-          if [ -n "${NODE_AUTH_TOKEN:-}" ]; then
-            echo "//registry.npmjs.org/:_authToken=${NODE_AUTH_TOKEN}" >> ~/.npmrc
-          fi
-          npm publish --access public --provenance
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: npm publish --access public --provenance
 
       - name: Create GitHub Release
         env:
