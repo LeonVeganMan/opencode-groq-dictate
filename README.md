@@ -39,18 +39,23 @@ cursor, as if it had been pasted by hand.
 ## Install
 
 ```bash
+opencode plugin add opencode-groq-dictate
+```
+
+Restart the TUI afterwards — plugins are read at startup and there is no hot reload. On the
+first `alt+v` the plugin asks for the Groq API key (the free tier is enough) and keeps it in
+the opencode plugin storage, never in this repository. If the key is rejected (`401`) it is
+dropped and asked again.
+
+To update: `opencode plugin update`, then restart.
+
+For hacking on it, install from a clone instead — plugins are also discovered from
+`~/.config/opencode/plugins/<name>/` and need no `opencode.json` entry:
+
+```bash
 git clone https://github.com/LeonVeganMan/opencode-groq-dictate.git \
   ~/.config/opencode/plugins/opencode-groq-dictate
 ```
-
-Local plugins are discovered from `~/.config/opencode/plugins/<name>/`: no entry in
-`opencode.json` is needed. Restart the TUI afterwards — plugins are read at startup and
-there is no hot reload.
-
-The clone above stays the documented install — opencode loads plugins from that folder —
-and the package is also on npm as
-[`opencode-groq-dictate`](https://www.npmjs.com/package/opencode-groq-dictate) for
-directories and registries that index plugins.
 
 ## Usage
 
