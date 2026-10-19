@@ -1,0 +1,32 @@
+{
+  "name": "opencode-groq-dictate",
+  "version": "1.0.0",
+  "description": "Groq dictation in the OpenCode v2 TUI: alt+v records, transcribes with whisper-large-v3-turbo, and pastes the text into the prompt.",
+  "private": false,
+  "type": "module",
+  "exports": {
+    "./tui": "./tui.tsx"
+  },
+  "scripts": {
+    "test": "bun test"
+  },
+  "files": [
+    "tui.tsx",
+    "src"
+  ],
+  "keywords": [
+    "opencode",
+    "opencode-plugin",
+    "tui",
+    "dictation",
+    "groq",
+    "whisper"
+  ],
+  "license": "MIT",
+  "author": "Leonardo Cosmai",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/LeonVeganMan/opencode-groq-dictate.git"
+  },
+  "homepage": "https://github.com/LeonVeganMan/opencode-groq-dictate#readme"
+}
