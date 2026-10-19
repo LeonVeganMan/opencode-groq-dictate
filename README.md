@@ -1,6 +1,7 @@
 # opencode-groq-dictate
 
 [![opencode v2](https://img.shields.io/badge/opencode-v2-orange.svg)](#requirements)
+[![npm](https://img.shields.io/npm/v/opencode-groq-dictate?label=npm)](https://www.npmjs.com/package/opencode-groq-dictate)
 [![license: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![release](https://img.shields.io/github/v/tag/LeonVeganMan/opencode-groq-dictate?label=release)](https://github.com/LeonVeganMan/opencode-groq-dictate/releases)
 [![tests](https://img.shields.io/badge/tests-bun%20test-informational.svg)](#development)
@@ -45,6 +46,11 @@ git clone https://github.com/LeonVeganMan/opencode-groq-dictate.git \
 Local plugins are discovered from `~/.config/opencode/plugins/<name>/`: no entry in
 `opencode.json` is needed. Restart the TUI afterwards — plugins are read at startup and
 there is no hot reload.
+
+The clone above stays the documented install — opencode loads plugins from that folder —
+and the package is also on npm as
+[`opencode-groq-dictate`](https://www.npmjs.com/package/opencode-groq-dictate) for
+directories and registries that index plugins.
 
 ## Usage
 
