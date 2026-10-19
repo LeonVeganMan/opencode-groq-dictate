@@ -15,9 +15,15 @@ test("audio length comes from the bytes past the header", () => {
   expect(audioSeconds(44 + 16_000 * 2 * 3)).toBe(3)
 })
 
-test("cost is the hourly rate pro rata", () => {
-  expect(cost(3600)).toBeCloseTo(0.04, 6)
+test("cost follows the model's hourly rate", () => {
+  expect(cost(3600, "whisper-large-v3-turbo")).toBeCloseTo(0.04, 6)
+  expect(cost(3600, "whisper-large-v3")).toBeCloseTo(0.111, 6)
   expect(cost(0)).toBe(0)
+})
+
+test("a request bills at least ten seconds", () => {
+  expect(cost(4, "whisper-large-v3-turbo")).toBeCloseTo((10 / 3600) * 0.04, 9)
+  expect(cost(30, "whisper-large-v3")).toBeCloseTo((30 / 3600) * 0.111, 9)
 })
 
 test("the rpm window drops stamps older than a minute", () => {
@@ -41,6 +47,17 @@ test("a config with the wrong types falls back to the defaults", () => {
 
 test("the cost line keeps the shell script's four columns", () => {
   expect(logLine(new Date(2026, 9, 19, 8, 5, 3), 12.34, 0.000137)).toBe("2026-10-19 08:05:03 12.3 0.000137")
+  expect(logLine(new Date(2026, 9, 19, 8, 5, 3), 12.34, 0.000137, "whisper-large-v3")).toBe(
+    "2026-10-19 08:05:03 12.3 0.000137 whisper-large-v3",
+  )
+})
+
+test("the totals ignore the optional model column", () => {
+  const now = new Date(2026, 9, 19, 12, 0, 0)
+  const log = ["2026-10-19 08:05:03 12.3 0.000137", "2026-10-19 09:00:00 30.0 0.000333 whisper-large-v3"].join("\n")
+  const totals = summarize(log, now)
+  expect(totals.today).toBeCloseTo(0.00047, 9)
+  expect(totals.todayCount).toBe(2)
 })
 
 test("the totals only count today's lines, and ignore junk", () => {

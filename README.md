@@ -108,10 +108,13 @@ takes, spend in total.
 
 ## Cost and quota
 
-- Cost is estimated on the audio length at **$0.04/hour** and appended to
+- Cost is estimated on the audio length at the model's rate — **$0.04/hour** for
+  `whisper-large-v3-turbo`, **$0.111/hour** for `whisper-large-v3` — with Groq's 10-second
+  minimum billed length per request. It is appended to
   `~/.cache/groq-dictate-costs.log`, the same file and the same four columns
   (`date time seconds cost`) the older shell script wrote, so a `/dictate-cost` command
-  keeps working unchanged.
+  keeps working unchanged. The model name trails as an optional fifth column, so each
+  line stays attributable while readers of the first four columns ignore it.
 - The **daily** request figure comes from the `x-ratelimit-*` headers of the real
   transcription. No request is spent just to read the quota.
 - The **per-minute** figure is tracked locally: timestamps of the last 60 seconds, cap

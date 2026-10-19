@@ -5,8 +5,13 @@
 export const MODELS = ["whisper-large-v3-turbo", "whisper-large-v3"] as const
 export type Model = (typeof MODELS)[number]
 export const DEFAULT_MODEL: Model = "whisper-large-v3-turbo"
-// Both models bill the same per audio hour; turbo is only faster.
-export const USD_PER_HOUR = 0.04
+// Groq bills per audio hour: large-v3 is ~2.8x turbo, not the same rate.
+export const RATE_PER_HOUR: Record<Model, number> = {
+  "whisper-large-v3-turbo": 0.04,
+  "whisper-large-v3": 0.111,
+}
+// Groq bills a minimum of 10 seconds per request, however short the take.
+export const MIN_BILLED_SECONDS = 10
 export const RPM_LIMIT = 20
 // A forgotten recording would upload silence for minutes; cap it.
 export const MAX_SECONDS = 60
@@ -33,8 +38,9 @@ export function audioSeconds(bytes: number): number {
   return Math.max(0, bytes - WAV_HEADER) / (SAMPLE_RATE * BYTES_PER_SAMPLE)
 }
 
-export function cost(seconds: number): number {
-  return (seconds / 3600) * USD_PER_HOUR
+export function cost(seconds: number, model: Model = DEFAULT_MODEL): number {
+  const billable = seconds > 0 ? Math.max(seconds, MIN_BILLED_SECONDS) : 0
+  return (billable / 3600) * RATE_PER_HOUR[model]
 }
 
 export function recentRpm(stamps: number[], now: number): number[] {
@@ -42,12 +48,14 @@ export function recentRpm(stamps: number[], now: number): number[] {
 }
 
 // Same columns the shell script wrote: `date time seconds cost`, which is what
-// the /dictate-cost command's awk still reads.
-export function logLine(at: Date, seconds: number, usd: number): string {
+// the /dictate-cost command's awk still reads. The model is appended as a fifth
+// column so a rate change stays attributable; older lines simply lack it.
+export function logLine(at: Date, seconds: number, usd: number, model?: Model): string {
   const pad = (n: number) => String(n).padStart(2, "0")
   const date = `${at.getFullYear()}-${pad(at.getMonth() + 1)}-${pad(at.getDate())}`
   const time = `${pad(at.getHours())}:${pad(at.getMinutes())}:${pad(at.getSeconds())}`
-  return `${date} ${time} ${seconds.toFixed(1)} ${usd.toFixed(6)}`
+  const line = `${date} ${time} ${seconds.toFixed(1)} ${usd.toFixed(6)}`
+  return model ? `${line} ${model}` : line
 }
 
 export type Totals = { today: number; total: number; todayCount: number }

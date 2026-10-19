@@ -17,6 +17,7 @@ import {
   recentRpm,
   startTicker,
   summarize,
+  type Model,
 } from "./src/voice"
 
 const WAV = "/tmp/opencode-groq-dictate.wav"
@@ -119,10 +120,10 @@ export default Plugin.define({
     }
 
     // Cost bookkeeping: the log line is best effort, the totals are in memory.
-    async function bookkeep(seconds: number) {
-      const usd = cost(seconds)
+    async function bookkeep(seconds: number, model: Model) {
+      const usd = cost(seconds, model)
       try {
-        await appendFile(COST_LOG, logLine(new Date(), seconds, usd) + "\n")
+        await appendFile(COST_LOG, logLine(new Date(), seconds, usd, model) + "\n")
       } catch (error) {
         context.ui.toast.show({ message: `Cost log: ${String(error)}`, variant: "warning" })
       }
@@ -155,7 +156,7 @@ export default Plugin.define({
       // a copy of everything dictated on disk.
       await rm(WAV, { force: true }).catch(() => {})
 
-      const usd = await bookkeep(seconds)
+      const usd = await bookkeep(seconds, model)
       context.ui.toast.show({ message: `Dictated ${seconds.toFixed(1)}s · $${usd.toFixed(4)}`, variant: "success" })
     }
 
