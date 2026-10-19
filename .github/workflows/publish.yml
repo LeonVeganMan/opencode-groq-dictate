@@ -27,7 +27,11 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v7
         with:
-          node-version: "22"
+          node-version: "24"
+
+      # Trusted publishing needs npm >= 11.5.1; node 22 ships npm 10 and fails with ENEEDAUTH.
+      - name: Update npm
+        run: npm install -g npm@latest && npm --version
 
       - name: Run tests
         run: bun test
