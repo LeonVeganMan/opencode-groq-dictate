@@ -1,5 +1,5 @@
 /** @jsxImportSource @opentui/solid */
-import { spawn } from "node:child_process"
+import { execFile, spawn } from "node:child_process"
 import { readFile, appendFile, rm, stat } from "node:fs/promises"
 import { homedir } from "node:os"
 import { join } from "node:path"
@@ -187,11 +187,27 @@ export default Plugin.define({
       }
     }
 
+    // A monitor source records the speakers, not the room: that silence comes back as
+    // an invented sentence ("Grazie a tutti!"), so the take is refused before it starts.
+    const hasMicrophone = () =>
+      new Promise<boolean>((done) => {
+        execFile("pactl", ["get-default-source"], (error, stdout) =>
+          done(!!error || !stdout.trim().endsWith(".monitor")),
+        )
+      })
+
     async function start() {
       const { apiKey } = settings()
       if (!apiKey) {
         context.ui.toast.show({ message: "Set the Groq API key first", variant: "warning" })
         if (!(await askKey())) return
+      }
+      if (!(await hasMicrophone())) {
+        context.ui.toast.show({
+          message: "No microphone: the default source is a monitor",
+          variant: "error",
+        })
+        return
       }
       const now = Date.now()
       const recent = recentRpm(read(rpm), now)
