@@ -57,6 +57,11 @@ git clone https://github.com/LeonVeganMan/opencode-groq-dictate.git \
   ~/.config/opencode/plugins/opencode-groq-dictate
 ```
 
+The clone is for development only. `opencode plugin add` installs the npm package
+*alongside* it, and OpenCode would then load the same plugin twice: duplicated palette
+entries, a doubled footer line, and the key bind registered twice. Pick one — move the
+clone out of `~/.config/opencode/plugins/` before installing from npm.
+
 ## Usage
 
 | Key | Action |
