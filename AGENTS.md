@@ -12,7 +12,7 @@ in the composer to be corrected.
   Layer commands: `toggle` (default `alt+v`), `toggleSubmit` (`ctrl+alt+v`, pastes then
   dispatches `prompt.submit`), `cancel` (`escape`), `quota`, `language`, `model`,
   `settings`. Both binds are read from the stored config inside the reactive layer
-  factory (`bindOf(settings().bindStart)`), so the `⚙` panel rebinds them live — a
+  factory (`bindOf(settings().bindStart)`), so the `settings` panel rebinds them live — a
   blank string becomes `false` and disables the key without removing the command.
   The sidebar rows are clickable too: plain click toggles, ctrl+click submits; the
   `MouseEvent` carries `modifiers.ctrl`.

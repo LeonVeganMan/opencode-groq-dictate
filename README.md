@@ -68,17 +68,17 @@ clone out of `~/.config/opencode/plugins/` before installing from npm.
 |-----|--------|
 | `alt+v` | start recording, press again to stop and transcribe |
 | `ctrl+alt+v` | same, but the prompt is submitted as soon as the text lands |
-| click on `🎤 Groq Dictate` or on the `state` row | same as `alt+v` |
+| click on `Groq Dictate` or on the `state` row | same as `alt+v` |
 | `ctrl+click` on the same two | same as `ctrl+alt+v` |
 | `esc` | cancel the take: no upload, no request, no cost |
 | `/dictate` | same as `alt+v`, from the command palette |
-| `⚙` next to the title | open the settings panel |
+| `settings` next to the title | open the settings panel |
 
 A take stops on its own after 60 seconds. Everything else is in the palette under
 **Voice**: `Dictate (Groq) and submit`, `Dictation model`, `Dictation language`,
 `Dictation quota`, `Dictation settings`.
 
-The `⚙` panel (or `Dictation settings` in the palette) holds the four things worth
+The `settings` panel (or `Dictation settings` in the palette) holds the four things worth
 changing: the two shortcuts, the model and the language. Click a row, write the new
 value, and it applies at once — the keymap layer reads the stored config, so a new
 combination works without restarting OpenCode. A blank shortcut disables the key but

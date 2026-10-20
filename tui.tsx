@@ -512,12 +512,10 @@ export default Plugin.define({
         return (
           <box flexDirection="column">
             <box flexDirection="row" gap={1}>
-              <text fg={muted()} onMouseUp={(event) => toggle(wantsSubmit(event))}>
-                {"🎤 Groq Dictate"}
-              </text>
-              <text fg={muted()} onMouseUp={() => openSettings()}>
-                {"⚙"}
-              </text>
+              {/* Plain glyphs: the emoji did not render in every terminal font. */}
+              <text fg={state()}>{"■"}</text>
+              <text onMouseUp={(event) => toggle(wantsSubmit(event))}>{"Groq Dictate"}</text>
+              <text fg={muted()} onMouseUp={() => openSettings()}>{"settings"}</text>
             </box>
             {row(
               "state",
