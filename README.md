@@ -67,8 +67,8 @@ clone out of `~/.config/opencode/plugins/` before installing from npm.
 
 | Key | Action |
 |-----|--------|
-| `alt+v` | start recording, press again to stop and transcribe |
-| `ctrl+alt+v` | same, but the prompt is submitted as soon as the text lands |
+| `alt+v` | start recording; while recording, stop and paste the text so you can review it |
+| `ctrl+alt+v` | start recording; while recording, stop, paste and send it right away |
 | click on `Groq Dictate` or on the `state` row | same as `alt+v` |
 | `ctrl+click` on the same two | same as `ctrl+alt+v` |
 | `esc` | cancel the take: no upload, no request, no cost |
@@ -173,7 +173,7 @@ separate from the TUI so it can be unit tested without a terminal.
 
 - TUI only: dictating into a browser or an editor is out of scope. A desktop shortcut
   running a small script is still the right tool there.
-- The transcript is pasted, not submitted: you always get a chance to fix it.
+- The transcript is pasted, not submitted, unless you stop with `ctrl+alt+v` or a ctrl+click: the plain stop always leaves you a chance to fix it.
 - No automatic stop at the end of a sentence yet. The microphone gain on a typical
   laptop is too high for a threshold to separate voice from room; see [TODO.md](TODO.md)
   for the measurements and the sketch.

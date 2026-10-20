@@ -137,10 +137,6 @@ export default Plugin.define({
       return usd
     }
 
-    // A recording started with ctrl+alt+v (or ctrl+click) also submits the prompt
-    // once the text lands, so the same gesture can send without reaching for Enter.
-    let submitOnStop = false
-
     async function transcribe(seconds: number, submit: boolean) {
       const { apiKey, language, model } = settings()
       const key = apiKey || (await askKey())
@@ -168,13 +164,17 @@ export default Plugin.define({
       await rm(WAV, { force: true }).catch(() => {})
 
       const usd = await bookkeep(seconds, model)
-      context.ui.toast.show({ message: `Dictated ${seconds.toFixed(1)}s · $${usd.toFixed(4)}`, variant: "success" })
+      // Say what happened to the text: the two stops end very differently, and a
+      // sent prompt is gone from the composer by the time the toast is read.
+      const how = submit ? "sent" : "pasted, review it"
+      context.ui.toast.show({
+        message: `Dictated ${seconds.toFixed(1)}s · $${usd.toFixed(4)} · ${how}`,
+        variant: "success",
+      })
     }
 
-    async function stop() {
+    async function stop(submit = false) {
       if (!recorder) return
-      const submit = submitOnStop
-      submitOnStop = false
       const child = recorder
       recorder = null
       setRecording(false)
@@ -210,7 +210,7 @@ export default Plugin.define({
         )
       })
 
-    async function start(submit = false) {
+    async function start() {
       const { apiKey } = settings()
       if (!apiKey) {
         context.ui.toast.show({ message: "Set the Groq API key first", variant: "warning" })
@@ -245,9 +245,6 @@ export default Plugin.define({
         context.ui.toast.show({ message: `parec: ${error.message}`, variant: "error" })
       })
       setRecording(true)
-      // Only a take that actually started arms the submit, so a failed start does
-      // not make the next alt+v send the prompt.
-      submitOnStop = submit
       setElapsed(0)
       ticker = startTicker(() => setElapsed((value) => value + 1))
       // Nobody wants a ten-minute upload because the stop key was forgotten.
@@ -255,10 +252,11 @@ export default Plugin.define({
         context.ui.toast.show({ message: `Stopped at ${MAX_SECONDS}s`, variant: "warning" })
         void stop()
       }, MAX_SECONDS * 1000)
+      // The gesture chooses at stop time, so both ways are spelled out up front.
       context.ui.toast.show({
-        message: submit
-          ? `Recording… ${settings().bindSubmit || "the palette"} stops and sends · esc cancels`
-          : `Recording… ${settings().bindStart || "the palette"} stops · esc cancels`,
+        message: `Recording… ${settings().bindStart || "the palette"} stops · ${
+          settings().bindSubmit || "the palette"
+        } stops and sends · esc cancels`,
         variant: "info",
         duration: 2000,
       })
@@ -268,7 +266,6 @@ export default Plugin.define({
     // Esc aborts the take: nothing is uploaded, so no quota and no cost.
     async function cancel() {
       if (!recorder) return
-      submitOnStop = false
       const child = recorder
       recorder = null
       setRecording(false)
@@ -286,8 +283,14 @@ export default Plugin.define({
     // One entry point for the keybinding and for the click on the panel.
     // submit=true means "record, transcribe, then press Enter".
     const toggle = (submit = false) => {
-      if (recording()) return stop()
-      return start(submit)
+      // Decide at stop time: plain gesture stops and keeps the text, the
+      // submit/modifier variant stops and sends.
+      const action = recording() ? stop(submit) : start()
+      // The host turns a thrown error into a generic "plugin failure" toast and
+      // logs nothing, so the real message is surfaced here instead of being lost.
+      return action.catch((error) => {
+        context.ui.toast.show({ message: `Dictation: ${String(error)}`, variant: "error" })
+      })
     }
 
     async function pickModel() {
@@ -518,14 +521,18 @@ export default Plugin.define({
               <text fg={muted()}>{"Groq Dictate"}</text>
               <text fg={accent()} onMouseUp={() => openSettings()}>{"settings"}</text>
             </box>
-            {row(
-              "state",
-              // The square is the record button: it sits next to the state word,
-              // click starts, ctrl+click starts and sends.
-              recording() ? `■ rec ${elapsed()}s` : busy() ? "■ transcribing…" : "■ idle",
-              state,
-              (event) => toggle(wantsSubmit(event)),
-            )}
+            {/* One line: the red square stops and keeps the text, the accent link
+                stops and sends. Both are plain clicks, because the terminal keeps
+                ctrl+click for text selection. */}
+            <box flexDirection="row" gap={2}>
+              <text>{"state".padEnd(LABEL_WIDTH)}</text>
+              <text fg={state()} onMouseUp={() => toggle(false)}>
+                {recording() ? `■ rec ${elapsed()}s` : busy() ? "■ transcribing…" : "■ idle"}
+              </text>
+              <Show when={recording()}>
+                <text fg={accent()} onMouseUp={() => toggle(true)}>{"stop and send"}</text>
+              </Show>
+            </box>
             {row("model", settings().model.replace("whisper-", ""), () => undefined, pickModel)}
             {row("lang", settings().language, () => undefined, pickLanguage)}
             {row("today", `$${figures.today.toFixed(4)} · ${figures.todayCount}`, accent)}

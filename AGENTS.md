@@ -2,22 +2,21 @@
 
 TUI plugin for OpenCode v2: `alt+v` toggles a `parec` recording, the WAV goes to Groq
 (`whisper-large-v3-turbo`, `language=it`), and the transcription is put in the clipboard
-and pasted into the prompt with `prompt.paste`. Nothing is auto-submitted: the text stays
+and pasted into the prompt with `prompt.paste`. Nothing is submitted unless you stop with `ctrl+alt+v` or a ctrl+click: the text stays
 in the composer to be corrected.
 
 ## Layout
 
 - `tui.tsx` — the plugin: `Plugin.define({ id: "opencode-groq-dictate", setup(context) })`. Recording,
   Groq call, clipboard, keymap layer, dialogs. Exposed as the package's `./tui` export.
-  Layer commands: `toggle` (default `alt+v`), `toggleSubmit` (`ctrl+alt+v`, pastes then
-  dispatches `prompt.submit`), `cancel` (`escape`), `quota`, `language`, `model`,
+  Layer commands: `toggle` (default `alt+v`), `toggleSubmit` (`ctrl+alt+v`, stops, pastes and dispatches `prompt.submit`), `cancel` (`escape`), `quota`, `language`, `model`,
   `settings`. Both binds are read from the stored config inside the reactive layer
   factory (`bindOf(settings().bindStart)`), so the `settings` panel rebinds them live — a
   blank string becomes `false` and disables the key without removing the command.
-  The sidebar rows are clickable too: plain click toggles, ctrl+click submits; the
+  The sidebar rows are clickable too: plain click starts and stops keeping the text, ctrl+click starts and stops sending; the
   `MouseEvent` carries `modifiers.ctrl`.
 - `src/voice.ts` — pure logic, no TUI imports: rates, `cost()`, `recentRpm()`, `logLine()`, `parseConfig()`.
-- `src/voice.test.ts` — `bun test` (9 tests).
+- `src/voice.test.ts` — `bun test` (10 tests).
 - `src/*.test.ts` must not import `@opencode/plugin/tui`.
 
 ## Commands
