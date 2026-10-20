@@ -456,21 +456,23 @@ export default Plugin.define({
       ],
     }))
 
-    const red = () => context.theme?.hue?.red?.["400"] ?? "#ff5555"
-    const amber = () => context.theme?.hue?.orange ?? "#FF9654"
-    const green = () => context.theme?.hue?.green?.["400"] ?? "#7fbf7f"
+    // Theme colours are shade maps ({100..600}): passing the map itself as `fg`
+    // crashes the slot renderer (e.length), so every helper resolves one shade.
+    const shade = (value: unknown, key = "400"): string | undefined =>
+      typeof value === "string" ? value : (value as Record<string, string> | undefined)?.[key]
+    const red = () => shade(context.theme?.hue?.red) ?? "#ff5555"
+    const amber = () => shade(context.theme?.hue?.orange) ?? "#FF9654"
+    const green = () => shade(context.theme?.hue?.green) ?? "#7fbf7f"
     const muted = () => context.theme?.text?.muted ?? context.theme?.text?.subdued ?? "#808080"
     // The brand accent, the same one the go-meter panel uses for its figures.
-    const accent = () =>
-      context.theme?.hue?.accent?.["500"] ?? context.theme?.hue?.interactive?.["300"] ?? "#FF9654"
+    const accent = () => shade(context.theme?.hue?.accent, "500") ?? shade(context.theme?.hue?.interactive, "300") ?? "#FF9654"
 
     // The footer row already carries the model and the other status items, so the
     // dot sits next to them and disappears when there is nothing to report.
     context.ui.slot({
       append: "prompt.footer.status",
-      // Always return an element: the host reads .length on what the render
-      // returns, and a <Show> that resolves to nothing hands it undefined,
-      // which crashes the slot ("evaluating 'e.length'") on v2.1.0.
+      // Always return an element, never a <Show> that resolves to nothing: the
+      // host reads .length on the render result, so undefined crashes the slot.
       render: () => (
         <text fg={recording() ? red() : amber()}>
           {recording() ? `● REC ${elapsed()}s` : busy() ? "● …" : ""}
@@ -513,13 +515,14 @@ export default Plugin.define({
           <box flexDirection="column">
             <box flexDirection="row" gap={1}>
               {/* Plain glyphs: the emoji did not render in every terminal font. */}
-              <text fg={state()}>{"■"}</text>
-              <text onMouseUp={(event) => toggle(wantsSubmit(event))}>{"Groq Dictate"}</text>
+              <text fg={muted()}>{"Groq Dictate"}</text>
               <text fg={muted()} onMouseUp={() => openSettings()}>{"settings"}</text>
             </box>
             {row(
               "state",
-              recording() ? `● rec ${elapsed()}s` : busy() ? "transcribing…" : "idle",
+              // The square is the record button: it sits next to the state word,
+              // click starts, ctrl+click starts and sends.
+              recording() ? `■ rec ${elapsed()}s` : busy() ? "■ transcribing…" : "■ idle",
               state,
               (event) => toggle(wantsSubmit(event)),
             )}
