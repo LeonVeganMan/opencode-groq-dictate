@@ -67,16 +67,34 @@ clone out of `~/.config/opencode/plugins/` before installing from npm.
 | Key | Action |
 |-----|--------|
 | `alt+v` | start recording, press again to stop and transcribe |
+| `ctrl+alt+v` | same, but the prompt is submitted as soon as the text lands |
+| click on `🎤 Groq Dictate` or on the `state` row | same as `alt+v` |
+| `ctrl+click` on the same two | same as `ctrl+alt+v` |
 | `esc` | cancel the take: no upload, no request, no cost |
 | `/dictate` | same as `alt+v`, from the command palette |
 
 A take stops on its own after 60 seconds. Everything else is in the palette under
-**Voice**: `Dictation model`, `Dictation language`, `Dictation quota`.
+**Voice**: `Dictate (Groq) and submit`, `Dictation model`, `Dictation language`,
+`Dictation quota`.
+
+Both bindings are ordinary commands, so you can rebind or disable them in
+`cli.json` without touching the plugin:
+
+```jsonc
+{
+  "keybinds": {
+    "opencode-groq-dictate.toggle": "alt+d",
+    "opencode-groq-dictate.toggleSubmit": false
+  }
+}
+```
+
+The click handlers stay available even when both bindings are off.
 
 Super+V cannot be used: VTE (Tilix, xfce4-terminal) only enables xterm
 `modifyOtherKeys`, which never reports the Super modifier, so the binding could not
-fire inside the terminal. `alt+v` is reported by both the legacy and the
-`modifyOtherKeys` encodings.
+fire inside the terminal. `alt+v` and `ctrl+alt+v` are reported by both the legacy
+and the `modifyOtherKeys` encodings.
 
 ## Screenshots
 

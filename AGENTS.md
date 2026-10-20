@@ -9,7 +9,10 @@ in the composer to be corrected.
 
 - `tui.tsx` — the plugin: `Plugin.define({ id: "opencode-groq-dictate", setup(context) })`. Recording,
   Groq call, clipboard, keymap layer, dialogs. Exposed as the package's `./tui` export.
-  Layer commands: `toggle` (`alt+v`), `cancel` (`escape`), `quota`, `language`, `model`.
+  Layer commands: `toggle` (`alt+v`), `toggleSubmit` (`ctrl+alt+v`, pastes then
+  dispatches `prompt.submit`), `cancel` (`escape`), `quota`, `language`, `model`.
+  The sidebar rows are clickable too: plain click toggles, ctrl+click submits; the
+  `MouseEvent` carries `modifiers.ctrl`.
 - `src/voice.ts` — pure logic, no TUI imports: rates, `cost()`, `recentRpm()`, `logLine()`, `parseConfig()`.
 - `src/voice.test.ts` — `bun test` (9 tests).
 - `src/*.test.ts` must not import `@opencode/plugin/tui`.

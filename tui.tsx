@@ -136,7 +136,11 @@ export default Plugin.define({
       return usd
     }
 
-    async function transcribe(seconds: number) {
+    // A recording started with ctrl+alt+v (or ctrl+click) also submits the prompt
+    // once the text lands, so the same gesture can send without reaching for Enter.
+    let submitOnStop = false
+
+    async function transcribe(seconds: number, submit: boolean) {
       const { apiKey, language, model } = settings()
       const key = apiKey || (await askKey())
       if (!key) return
@@ -152,6 +156,12 @@ export default Plugin.define({
       }
 
       await paste(outcome.text)
+      if (submit) {
+        // The TUI applies the paste on the next frame; submitting in the same
+        // tick would send the prompt without the dictated text.
+        await new Promise((done) => setTimeout(done, 80))
+        context.keymap.dispatch("prompt.submit")
+      }
       // The recording is only needed until Groq answers; leaving it in /tmp keeps
       // a copy of everything dictated on disk.
       await rm(WAV, { force: true }).catch(() => {})
@@ -162,6 +172,8 @@ export default Plugin.define({
 
     async function stop() {
       if (!recorder) return
+      const submit = submitOnStop
+      submitOnStop = false
       const child = recorder
       recorder = null
       setRecording(false)
@@ -180,7 +192,7 @@ export default Plugin.define({
       }
       context.ui.toast.show({ message: "Transcribing…", variant: "info" })
       try {
-        await transcribe(seconds)
+        await transcribe(seconds, submit)
       } catch (error) {
         context.ui.toast.show({ message: String(error), variant: "error" })
       } finally {
@@ -197,7 +209,7 @@ export default Plugin.define({
         )
       })
 
-    async function start() {
+    async function start(submit = false) {
       const { apiKey } = settings()
       if (!apiKey) {
         context.ui.toast.show({ message: "Set the Groq API key first", variant: "warning" })
@@ -232,6 +244,9 @@ export default Plugin.define({
         context.ui.toast.show({ message: `parec: ${error.message}`, variant: "error" })
       })
       setRecording(true)
+      // Only a take that actually started arms the submit, so a failed start does
+      // not make the next alt+v send the prompt.
+      submitOnStop = submit
       setElapsed(0)
       ticker = startTicker(() => setElapsed((value) => value + 1))
       // Nobody wants a ten-minute upload because the stop key was forgotten.
@@ -239,13 +254,20 @@ export default Plugin.define({
         context.ui.toast.show({ message: `Stopped at ${MAX_SECONDS}s`, variant: "warning" })
         void stop()
       }, MAX_SECONDS * 1000)
-      context.ui.toast.show({ message: "Recording… alt+v stop · esc cancel", variant: "info", duration: 2000 })
+      context.ui.toast.show({
+        message: submit
+          ? "Recording… ctrl+alt+v stops and sends · esc cancels"
+          : "Recording… alt+v stop · esc cancel",
+        variant: "info",
+        duration: 2000,
+      })
     }
 
 
     // Esc aborts the take: nothing is uploaded, so no quota and no cost.
     async function cancel() {
       if (!recorder) return
+      submitOnStop = false
       const child = recorder
       recorder = null
       setRecording(false)
@@ -261,8 +283,11 @@ export default Plugin.define({
     }
 
     // One entry point for the keybinding and for the click on the panel.
-
-    const toggle = () => (recording() ? stop() : start())
+    // submit=true means "record, transcribe, then press Enter".
+    const toggle = (submit = false) => {
+      if (recording()) return stop()
+      return start(submit)
+    }
 
     async function pickModel() {
       const model = await context.ui.dialog.select({
@@ -318,7 +343,17 @@ export default Plugin.define({
           bind: "alt+v",
           palette: true,
           slash: { name: "dictate" },
-          run: toggle,
+          run: () => toggle(),
+        },
+        {
+          id: "opencode-groq-dictate.toggleSubmit",
+          title: "Dictate (Groq) and submit",
+          group: "Voice",
+          // ctrl+alt is what modifyOtherKeys reports, the same path the TUI's own
+          // ctrl+alt defaults take. Rebind or disable it in cli.json like any other.
+          bind: "ctrl+alt+v",
+          palette: true,
+          run: () => toggle(true),
         },
         {
           id: "opencode-groq-dictate.cancel",
@@ -354,7 +389,11 @@ export default Plugin.define({
           run: pickModel,
         },
       ],
-      bindings: ["opencode-groq-dictate.toggle", "opencode-groq-dictate.cancel"],
+      bindings: [
+        "opencode-groq-dictate.toggle",
+        "opencode-groq-dictate.toggleSubmit",
+        "opencode-groq-dictate.cancel",
+      ],
     }))
 
     const red = () => context.theme?.hue?.red?.["400"] ?? "#ff5555"
@@ -380,7 +419,15 @@ export default Plugin.define({
 
     // Label column, the same width trick the go-meter rows use so the figures line
     // up under each other instead of drifting.
-    const row = (label: string, value: string, fg: () => string | undefined, onClick?: () => void) => (
+    // ctrl+click mirrors ctrl+alt+v: the OpenTUI MouseEvent carries the modifiers.
+    type Click = { modifiers?: { ctrl?: boolean } } | undefined
+    const wantsSubmit = (event: Click) => !!event?.modifiers?.ctrl
+    const row = (
+      label: string,
+      value: string,
+      fg: () => string | undefined,
+      onClick?: (event: Click) => void,
+    ) => (
       <box flexDirection="row" gap={0} onMouseUp={onClick}>
         <text>{label.padEnd(LABEL_WIDTH)}</text>
         <text fg={fg()}>{value}</text>
@@ -403,14 +450,14 @@ export default Plugin.define({
         const state = () => (recording() ? red() : busy() ? amber() : green())
         return (
           <box flexDirection="column">
-            <text fg={muted()} onMouseUp={toggle}>
-              Groq Dictate
+            <text fg={muted()} onMouseUp={(event) => toggle(wantsSubmit(event))}>
+              {"🎤 Groq Dictate"}
             </text>
             {row(
               "state",
               recording() ? `● rec ${elapsed()}s` : busy() ? "transcribing…" : "idle",
               state,
-              toggle,
+              (event) => toggle(wantsSubmit(event)),
             )}
             {row("model", settings().model.replace("whisper-", ""), () => undefined, pickModel)}
             {row("lang", settings().language, () => undefined, pickLanguage)}
