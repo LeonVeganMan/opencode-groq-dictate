@@ -516,7 +516,7 @@ export default Plugin.define({
             <box flexDirection="row" gap={1}>
               {/* Plain glyphs: the emoji did not render in every terminal font. */}
               <text fg={muted()}>{"Groq Dictate"}</text>
-              <text fg={muted()} onMouseUp={() => openSettings()}>{"settings"}</text>
+              <text fg={accent()} onMouseUp={() => openSettings()}>{"settings"}</text>
             </box>
             {row(
               "state",

@@ -4,6 +4,7 @@
 [![npm](https://img.shields.io/npm/v/opencode-groq-dictate?label=npm)](https://www.npmjs.com/package/opencode-groq-dictate)
 [![license: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![release](https://img.shields.io/github/v/tag/LeonVeganMan/opencode-groq-dictate?label=release)](https://github.com/LeonVeganMan/opencode-groq-dictate/releases)
+[![OpenDock](https://img.shields.io/badge/OpenDock-listed-orange)](https://www.opendock.net/plugins/opencode-groq-dictate/)
 [![tests](https://img.shields.io/badge/tests-bun%20test-informational.svg)](#development)
 
 Dictation inside the **opencode v2** TUI: press `alt+v`, speak, press `alt+v` again.
