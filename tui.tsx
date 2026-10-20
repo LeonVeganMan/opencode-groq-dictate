@@ -468,12 +468,13 @@ export default Plugin.define({
     // dot sits next to them and disappears when there is nothing to report.
     context.ui.slot({
       append: "prompt.footer.status",
+      // Always return an element: the host reads .length on what the render
+      // returns, and a <Show> that resolves to nothing hands it undefined,
+      // which crashes the slot ("evaluating 'e.length'") on v2.1.0.
       render: () => (
-        <Show when={recording() || busy()}>
-          <text fg={recording() ? red() : amber()}>
-            {recording() ? `● REC ${elapsed()}s` : "● …"}
-          </text>
-        </Show>
+        <text fg={recording() ? red() : amber()}>
+          {recording() ? `● REC ${elapsed()}s` : busy() ? "● …" : ""}
+        </text>
       ),
     })
 
