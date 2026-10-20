@@ -6,6 +6,7 @@ import {
   cost,
   logLine,
   parseConfig,
+  peakDbfs,
   recentRpm,
   startTicker,
   summarize,
@@ -14,6 +15,20 @@ import {
 test("audio length comes from the bytes past the header", () => {
   expect(audioSeconds(44)).toBe(0)
   expect(audioSeconds(44 + 16_000 * 2 * 3)).toBe(3)
+})
+
+test("the peak level comes out in dBFS", () => {
+  const take = (samples: number[]) => {
+    const bytes = new Uint8Array(44 + samples.length * 2)
+    const view = new DataView(bytes.buffer)
+    samples.forEach((sample, index) => view.setInt16(44 + index * 2, sample, true))
+    return bytes
+  }
+  expect(peakDbfs(take([]))).toBe(-Infinity)
+  expect(peakDbfs(take([0, 0]))).toBe(-Infinity)
+  expect(peakDbfs(take([32767, 1]))).toBeCloseTo(0, 1)
+  // Half scale is -6 dB, which is what the "too quiet" warning keys off.
+  expect(peakDbfs(take([-16384]))).toBeCloseTo(-6.02, 1)
 })
 
 test("cost follows the model's hourly rate", () => {

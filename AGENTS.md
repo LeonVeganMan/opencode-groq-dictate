@@ -82,3 +82,13 @@ Publishing is tag-driven (`.github/workflows/publish.yml`): push a `v*` tag, CI 
   package before publishing: `npm pack`, `npm i <tarball>` in a temp dir, then check that
   `@opentui/solid`, `@opentui/core` and `solid-js` resolve from the plugin directory — this is
   the check that would have caught the peer-dependency bug above.
+
+## Audio level
+
+`peakDbfs()` in `src/voice.ts` reads the peak of the take before upload, and the
+plugin warns at 0 dBFS (clipping) or below -35 dBFS (too quiet). Dictation fails
+on the mic gain, not on the room: the calibration that worked here was
+`Internal Mic Boost` 0 with `Capture` 52 on card 1 (about +21 dB), which lands
+the voice near -27 dB mean / -11 dB peak. The prompt form field is deliberately
+not sent: an A/B on a sentence full of technical terms (leader, shortcut, commit,
+FFmpeg, branch) produced identical text with and without it.

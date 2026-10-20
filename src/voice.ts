@@ -61,6 +61,19 @@ export function audioSeconds(bytes: number): number {
   return Math.max(0, bytes - WAV_HEADER) / (SAMPLE_RATE * BYTES_PER_SAMPLE)
 }
 
+// Peak level in dBFS: 0 is full scale, -Infinity is digital silence. Dictation
+// goes wrong on the mic gain (clipping or a whisper), not on the room, so the
+// plugin warns before uploading a take it cannot read.
+export function peakDbfs(bytes: Uint8Array): number {
+  const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength)
+  let peak = 0
+  for (let i = WAV_HEADER; i + 1 < bytes.length; i += 2) {
+    const sample = Math.abs(view.getInt16(i, true))
+    if (sample > peak) peak = sample
+  }
+  return peak === 0 ? -Infinity : 20 * Math.log10(peak / 32768)
+}
+
 export function cost(seconds: number, model: Model = DEFAULT_MODEL): number {
   const billable = seconds > 0 ? Math.max(seconds, MIN_BILLED_SECONDS) : 0
   return (billable / 3600) * RATE_PER_HOUR[model]

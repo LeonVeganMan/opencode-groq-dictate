@@ -15,6 +15,7 @@ import {
   cost,
   logLine,
   parseConfig,
+  peakDbfs,
   recentRpm,
   startTicker,
   summarize,
@@ -85,8 +86,7 @@ export default Plugin.define({
 
     // One round trip to Groq. Returns the text, or why there is none, so the
     // caller does not have to read the response twice.
-    async function request(key: string, model: string, language: string) {
-      const bytes = await readFile(WAV)
+    async function request(key: string, model: string, language: string, bytes: Uint8Array) {
       const form = new FormData()
       form.append("file", new Blob([bytes], { type: "audio/wav" }), "voice.wav")
       form.append("model", model)
@@ -142,7 +142,19 @@ export default Plugin.define({
       const key = apiKey || (await askKey())
       if (!key) return
 
-      const outcome = await request(key, model, language)
+      const bytes = await readFile(WAV)
+      // A clipped or inaudible take still transcribes, badly: say it once, now,
+      // while the user can still fix the mixer.
+      const peak = peakDbfs(bytes)
+      if (peak > -0.5)
+        context.ui.toast.show({
+          message: "Audio clips at 0 dB: lower the mic gain",
+          variant: "warning",
+        })
+      else if (peak < -35)
+        context.ui.toast.show({ message: "Audio is very quiet: raise the mic gain", variant: "warning" })
+
+      const outcome = await request(key, model, language, bytes)
       if (outcome.error) {
         context.ui.toast.show({ message: outcome.error, variant: "error" })
         return
