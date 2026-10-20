@@ -20,18 +20,41 @@ export const BYTES_PER_SAMPLE = 2
 // parec writes a canonical 44-byte header; anything past it is audio.
 export const WAV_HEADER = 44
 
-export type Config = { apiKey: string; language: string; model: Model }
+export type Config = {
+  apiKey: string
+  language: string
+  model: Model
+  // Empty means "no binding": the command stays in the palette, the key does nothing.
+  bindStart: string
+  bindSubmit: string
+}
 
-export const DEFAULTS: Config = { apiKey: "", language: "it", model: DEFAULT_MODEL }
+export const DEFAULTS: Config = {
+  apiKey: "",
+  language: "it",
+  model: DEFAULT_MODEL,
+  bindStart: "alt+v",
+  bindSubmit: "ctrl+alt+v",
+}
 
 export function parseConfig(raw: unknown): Config {
   const value = (raw ?? {}) as Record<string, unknown>
   const model = MODELS.includes(value.model as Model) ? (value.model as Model) : DEFAULTS.model
+  // Binds are free text: an empty string is meaningful (disabled), a missing key is not.
+  const bind = (key: "bindStart" | "bindSubmit") =>
+    typeof value[key] === "string" ? (value[key] as string) : DEFAULTS[key]
   return {
     apiKey: typeof value.apiKey === "string" ? value.apiKey : DEFAULTS.apiKey,
     language: typeof value.language === "string" && value.language ? value.language : DEFAULTS.language,
     model,
+    bindStart: bind("bindStart"),
+    bindSubmit: bind("bindSubmit"),
   }
+}
+
+// The keymap wants `false` to disable a binding, not an empty string.
+export function bindOf(value: string): string | false {
+  return value.trim() || false
 }
 
 export function audioSeconds(bytes: number): number {

@@ -2,6 +2,7 @@ import { expect, test } from "bun:test"
 import {
   DEFAULT_MODEL,
   audioSeconds,
+  bindOf,
   cost,
   logLine,
   parseConfig,
@@ -32,17 +33,41 @@ test("the rpm window drops stamps older than a minute", () => {
 })
 
 test("a config with the wrong types falls back to the defaults", () => {
-  expect(parseConfig(null)).toEqual({ apiKey: "", language: "it", model: DEFAULT_MODEL })
+  expect(parseConfig(null)).toEqual({
+    apiKey: "",
+    language: "it",
+    model: DEFAULT_MODEL,
+    bindStart: "alt+v",
+    bindSubmit: "ctrl+alt+v",
+  })
   expect(parseConfig({ apiKey: 42, language: "", model: "nope" })).toEqual({
     apiKey: "",
     language: "it",
     model: DEFAULT_MODEL,
+    bindStart: "alt+v",
+    bindSubmit: "ctrl+alt+v",
   })
-  expect(parseConfig({ apiKey: "gsk_x", language: "auto", model: "whisper-large-v3" })).toEqual({
+  expect(
+    parseConfig({
+      apiKey: "gsk_x",
+      language: "auto",
+      model: "whisper-large-v3",
+      bindStart: "alt+d",
+      bindSubmit: "",
+    }),
+  ).toEqual({
     apiKey: "gsk_x",
     language: "auto",
     model: "whisper-large-v3",
+    bindStart: "alt+d",
+    // An empty bind is meaningful: the command stays in the palette, the key goes away.
+    bindSubmit: "",
   })
+})
+
+test("an empty bind becomes false for the keymap", () => {
+  expect(bindOf("alt+v")).toBe("alt+v")
+  expect(bindOf("  ")).toBe(false)
 })
 
 test("the cost line keeps the shell script's four columns", () => {

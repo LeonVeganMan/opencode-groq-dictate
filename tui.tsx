@@ -11,6 +11,7 @@ import {
   MODELS,
   RPM_LIMIT,
   audioSeconds,
+  bindOf,
   cost,
   logLine,
   parseConfig,
@@ -256,8 +257,8 @@ export default Plugin.define({
       }, MAX_SECONDS * 1000)
       context.ui.toast.show({
         message: submit
-          ? "Recording… ctrl+alt+v stops and sends · esc cancels"
-          : "Recording… alt+v stop · esc cancel",
+          ? `Recording… ${settings().bindSubmit || "the palette"} stops and sends · esc cancels`
+          : `Recording… ${settings().bindStart || "the palette"} stops · esc cancels`,
         variant: "info",
         duration: 2000,
       })
@@ -330,6 +331,57 @@ export default Plugin.define({
       context.ui.toast.show({ message: `Language: ${settings().language}`, variant: "success" })
     }
 
+    // One panel for the four things a user changes: the two shortcuts, the model
+    // and the language. Each row reopens the panel after writing, because the
+    // dialog body renders once and its labels would otherwise stay stale.
+    const settingsRow = (label: string, value: string, onClick: () => void) => (
+      <box flexDirection="row" onMouseUp={onClick}>
+        <text>{(label + "  ").padEnd(18)}</text>
+        <text fg={accent()}>{value}</text>
+      </box>
+    )
+
+    function openSettings() {
+      const current = settings()
+      context.ui.dialog.clear()
+      context.ui.dialog.show(() => (
+        <box flexDirection="column" paddingLeft={1} paddingRight={1}>
+          <text fg={accent()}>{"Groq dictation"}</text>
+          <text fg={muted()}>{"click a row: changes apply at once"}</text>
+          {settingsRow("start / stop", current.bindStart || "disabled", () =>
+            editBind("bindStart", "Start and stop"),
+          )}
+          {settingsRow("start and send", current.bindSubmit || "disabled", () =>
+            editBind("bindSubmit", "Start, stop and send"),
+          )}
+          {settingsRow("model", current.model.replace("whisper-", ""), () => change(pickModel))}
+          {settingsRow("language", current.language, () => change(pickLanguage))}
+        </box>
+      ))
+      context.ui.dialog.set({ size: "large", centered: true })
+    }
+
+    // The panel closes before a prompt can open, then comes back with the new value.
+    async function change(action: () => Promise<void>) {
+      context.ui.dialog.clear()
+      await action()
+      openSettings()
+    }
+
+    async function editBind(key: "bindStart" | "bindSubmit", title: string) {
+      context.ui.dialog.clear()
+      const value = await context.ui.dialog.prompt({
+        title: `${title} (blank disables the key)`,
+        placeholder: settings()[key] || "e.g. alt+v",
+        value: settings()[key],
+      })
+      if (value !== undefined)
+        await updateConfig((draft) => {
+          draft[key] = value.trim()
+        })
+      openSettings()
+    }
+
     context.keymap.layer(() => ({
       mode: "global",
       priority: 10,
@@ -340,7 +392,8 @@ export default Plugin.define({
           group: "Voice",
           // Not super+v: VTE only enables xterm modifyOtherKeys, which never
           // reports the Super modifier, so that binding could not fire here.
-          bind: "alt+v",
+          // Read from the stored config, so changing it in the panel rebinds now.
+          bind: bindOf(settings().bindStart),
           palette: true,
           slash: { name: "dictate" },
           run: () => toggle(),
@@ -351,7 +404,7 @@ export default Plugin.define({
           group: "Voice",
           // ctrl+alt is what modifyOtherKeys reports, the same path the TUI's own
           // ctrl+alt defaults take. Rebind or disable it in cli.json like any other.
-          bind: "ctrl+alt+v",
+          bind: bindOf(settings().bindSubmit),
           palette: true,
           run: () => toggle(true),
         },
@@ -387,6 +440,13 @@ export default Plugin.define({
           group: "Voice",
           palette: true,
           run: pickModel,
+        },
+        {
+          id: "opencode-groq-dictate.settings",
+          title: "Dictation settings",
+          group: "Voice",
+          palette: true,
+          run: openSettings,
         },
       ],
       bindings: [
@@ -450,9 +510,14 @@ export default Plugin.define({
         const state = () => (recording() ? red() : busy() ? amber() : green())
         return (
           <box flexDirection="column">
-            <text fg={muted()} onMouseUp={(event) => toggle(wantsSubmit(event))}>
-              {"🎤 Groq Dictate"}
-            </text>
+            <box flexDirection="row" gap={1}>
+              <text fg={muted()} onMouseUp={(event) => toggle(wantsSubmit(event))}>
+                {"🎤 Groq Dictate"}
+              </text>
+              <text fg={muted()} onMouseUp={() => openSettings()}>
+                {"⚙"}
+              </text>
+            </box>
             {row(
               "state",
               recording() ? `● rec ${elapsed()}s` : busy() ? "transcribing…" : "idle",
