@@ -51,6 +51,7 @@ export default Plugin.define({
     // "busy" covers the gap between stop and paste, so the dot never blinks off.
     const [busy, setBusy] = createSignal(false)
     const [totals, setTotals] = createSignal({ today: 0, total: 0, todayCount: 0 })
+    const [showTotals, setShowTotals] = createSignal(false)
     const [last, setLast] = createSignal<{ seconds: number; usd: number } | null>(null)
     let ticker: (() => void) | null = null
     let autoStop: ReturnType<typeof setTimeout> | null = null
@@ -512,7 +513,7 @@ export default Plugin.define({
       </box>
     )
 
-    // Memoised so the six rows do not recompute the log totals on every repaint.
+    // Memoised so the spend rows do not recompute the log totals on every repaint.
     const spent = createMemo(() => read(totals))
     const lastRun = createMemo(() => last())
 
@@ -532,6 +533,10 @@ export default Plugin.define({
               {/* Plain glyphs: the emoji did not render in every terminal font. */}
               <text fg={muted()}>{"Groq Dictate"}</text>
               <text fg={accent()} onMouseUp={() => openSettings()}>{"settings"}</text>
+              {/* Spend rows are opt-in: the panel is two lines shorter by default. */}
+              <text fg={accent()} onMouseUp={() => setShowTotals((value) => !value)}>
+                {showTotals() ? "totals -" : "totals +"}
+              </text>
             </box>
             {/* One line: the red square stops and keeps the text, the accent link
                 stops and sends. Both are plain clicks, because the terminal keeps
@@ -545,12 +550,18 @@ export default Plugin.define({
                 <text fg={accent()} onMouseUp={() => toggle(true)}>{"stop and send"}</text>
               </Show>
             </box>
-            {row("model", settings().model.replace("whisper-", ""), () => undefined, pickModel)}
-            {row("lang", settings().language, () => undefined, pickLanguage)}
-            {row("today", `$${figures.today.toFixed(4)} · ${figures.todayCount}`, accent)}
-            {row("total", `$${figures.total.toFixed(4)}`, accent)}
-            <Show when={lastRun()}>
-              {(run) => row("last", `${run().seconds.toFixed(1)}s · $${run().usd.toFixed(4)}`, muted)}
+            <box flexDirection="row" gap={0}>
+              <text>{"model".padEnd(LABEL_WIDTH)}</text>
+              <text onMouseUp={pickModel}>{settings().model.replace("whisper-", "")}</text>
+              <text fg={muted()}>{" · "}</text>
+              <text onMouseUp={pickLanguage}>{settings().language}</text>
+            </box>
+            <Show when={showTotals()}>
+              {row("today", `$${figures.today.toFixed(4)} · ${figures.todayCount}`, accent)}
+              {row("total", `$${figures.total.toFixed(4)}`, accent)}
+              <Show when={lastRun()}>
+                {(run) => row("last", `${run().seconds.toFixed(1)}s · $${run().usd.toFixed(4)}`, muted)}
+              </Show>
             </Show>
             {row("rpm", `${used}/${RPM_LIMIT}`, used >= RPM_LIMIT ? red : muted, showQuota)}
           </box>
